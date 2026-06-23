@@ -93,3 +93,73 @@ def plot_confusion_matrix(
     fig.tight_layout()
     plt.savefig(output_path, dpi=180, bbox_inches="tight")
     plt.close()
+
+
+def plot_scatter(
+    train_data: list[dict[str, Any]],
+    test_data: list[dict[str, Any]],
+    y_test: list[int],
+    y_pred: list[int],
+    classes: dict[str, int],
+    k: int,
+    save_path: str | Path,
+    x_col: str = "nilai_uas",
+    y_col: str = "jam_belajar",
+) -> None:
+    output_path = Path(save_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    rev_classes = {v: k for k, v in classes.items()}
+    colors = {"Lulus": "#2e86ab", "Tidak Lulus": "#d64933"}
+    feat_labels = {
+        "nilai_tugas": "Nilai Tugas",
+        "nilai_kuis": "Nilai Kuis",
+        "nilai_uts": "Nilai UTS",
+        "nilai_uas": "Nilai UAS",
+        "absensi": "Absensi",
+        "jam_belajar": "Jam Belajar / Minggu",
+    }
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    for row in train_data:
+        x = float(row[x_col])
+        y = float(row[y_col])
+        label = rev_classes.get(int(row["label"]), "Unknown")
+        ax.scatter(x, y, c=colors.get(label, "#888"), s=40, alpha=0.35, edgecolors="none", zorder=1)
+
+    correct_x, correct_y = [], []
+    wrong_x, wrong_y = [], []
+    for i, row in enumerate(test_data):
+        x = float(row[x_col])
+        y = float(row[y_col])
+        if y_test[i] == y_pred[i]:
+            correct_x.append(x)
+            correct_y.append(y)
+        else:
+            wrong_x.append(x)
+            wrong_y.append(y)
+
+    ax.scatter(correct_x, correct_y, c="#1b5e20", s=110, alpha=0.9,
+               edgecolors="black", linewidths=1.2, marker="o", zorder=3, label="Prediksi Benar")
+    ax.scatter(wrong_x, wrong_y, c="#b71c1c", s=150, alpha=0.9,
+               edgecolors="black", linewidths=1.5, marker="X", zorder=4, label="Prediksi Salah")
+
+    handles = [
+        plt.Line2D([], [], marker="o", linestyle="none", c=colors["Lulus"], alpha=0.35, label="Lulus (latih)"),
+        plt.Line2D([], [], marker="o", linestyle="none", c=colors["Tidak Lulus"], alpha=0.35, label="Tidak Lulus (latih)"),
+        plt.Line2D([], [], marker="o", linestyle="none", c="#1b5e20", markeredgecolor="black",
+                   markeredgewidth=1.2, label="Uji - Benar"),
+        plt.Line2D([], [], marker="X", linestyle="none", c="#b71c1c", markersize=8,
+                   markeredgewidth=1.5, label="Uji - Salah"),
+    ]
+    ax.legend(handles=handles, loc="best", fontsize=8)
+
+    ax.set_xlabel(feat_labels.get(x_col, x_col))
+    ax.set_ylabel(feat_labels.get(y_col, y_col))
+    ax.set_title(f"Sebaran Data Mahasiswa (K = {k})")
+    ax.grid(True, linestyle="--", alpha=0.25)
+
+    fig.tight_layout()
+    plt.savefig(output_path, dpi=180, bbox_inches="tight")
+    plt.close()

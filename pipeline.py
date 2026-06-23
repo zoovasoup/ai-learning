@@ -51,5 +51,9 @@ def run_pipeline(csv_path: str | Path, k: int) -> dict[str, Any]:
         "y_test": y_test,
         "X_test": X_test,
         "test_data": test,
+        "train_data": train,
         "classes": classes,
+        "mins": mins,
+        "maxs": maxs,
+        "raw_records": records_enc,
     }

@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from pipeline import run_pipeline
-from reporting import plot_confusion_matrix, save_log
+from reporting import plot_confusion_matrix, plot_scatter, save_log
 
 K_VALUES = [3, 5, 7]
 CSV_PATH = Path("data/dataset_mahasiswa.csv")
@@ -22,6 +22,15 @@ def main() -> None:
             result["cm"],
             k,
             GRAPH_DIR / f"confusion_matrix_k{k}.png",
+        )
+        plot_scatter(
+            result["train_data"],
+            result["test_data"],
+            result["y_test"],
+            result["y_pred"],
+            result["classes"],
+            k,
+            GRAPH_DIR / f"scatter_k{k}.png",
         )
     save_log(results, LOG_DIR / "log.txt")
     print("\nOutput saved to output/logs/log.txt")
