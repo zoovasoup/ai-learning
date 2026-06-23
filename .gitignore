@@ -14,8 +14,9 @@ __pycache__/
 dist/
 build/
 
-# Output artifacts
-output/
+# Output artifacts (but allow .gitkeep)
+output/**
+!output/**/.gitkeep
 
 # Environment
 .env
