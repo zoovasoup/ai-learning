@@ -95,6 +95,41 @@ def plot_confusion_matrix(
     plt.close()
 
 
+def save_cv_log(cv_results: list[dict[str, Any]], path: str | Path) -> None:
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    lines: list[str] = []
+    lines.append("=" * 62)
+    lines.append("K-FOLD CROSS VALIDATION")
+    lines.append("=" * 62)
+    lines.append("")
+
+    for result in cv_results:
+        n_folds = result["n_folds"]
+        k = result["k"]
+        mean_acc = result["mean_accuracy"]
+        std_acc = result["std_accuracy"]
+        accs = result["accuracies"]
+        dist_name = result["dist_func_name"]
+
+        lines.append(f"K        = {k}")
+        lines.append(f"Folds    = {n_folds}-fold")
+        lines.append(f"Distance = {dist_name}")
+        lines.append("")
+        for i, acc in enumerate(accs, 1):
+            lines.append(f"  Fold-{i} : {acc:.2f}%")
+        lines.append("")
+        lines.append(f"  Rata-rata : {mean_acc:.2f}%")
+        lines.append(f"  Std Dev   : {std_acc:.2f}%")
+        lines.append(f"  Interval  : {mean_acc - 2*std_acc:.2f}% - {mean_acc + 2*std_acc:.2f}%")
+        lines.append("")
+        lines.append("-" * 62)
+        lines.append("")
+
+    output_path.write_text("\n".join(lines), encoding="utf-8")
+
+
 def plot_scatter(
     train_data: list[dict[str, Any]],
     test_data: list[dict[str, Any]],

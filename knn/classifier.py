@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 from collections import Counter
+from typing import Callable
 
 from .distance import euclidean
+
+DistanceFunc = Callable[[list[float], list[float]], float]
 
 
 def predict_one(
@@ -10,6 +13,7 @@ def predict_one(
     train_X: list[list[float]],
     train_y: list[int],
     k: int,
+    dist_func: DistanceFunc = euclidean,
 ) -> int:
     if k <= 0:
         raise ValueError("k must be greater than 0")
@@ -19,7 +23,7 @@ def predict_one(
         raise ValueError("train_X must not be empty")
 
     distances = [
-        (euclidean(test_row, train_row), label)
+        (dist_func(test_row, train_row), label)
         for train_row, label in zip(train_X, train_y)
     ]
     distances.sort(key=lambda item: item[0])
@@ -35,8 +39,9 @@ def predict(
     train_X: list[list[float]],
     train_y: list[int],
     k: int,
+    dist_func: DistanceFunc = euclidean,
 ) -> list[int]:
-    return [predict_one(test_row, train_X, train_y, k) for test_row in test_X]
+    return [predict_one(test_row, train_X, train_y, k, dist_func) for test_row in test_X]
 
 
 def accuracy_score(y_true: list[int], y_pred: list[int]) -> float:

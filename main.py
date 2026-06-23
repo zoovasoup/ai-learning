@@ -3,14 +3,26 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from pipeline import run_pipeline
-from reporting import plot_confusion_matrix, plot_scatter, save_log
+from knn.distance import euclidean, manhattan
+from knn.preprocessing import encode_labels, min_max_normalize, read_csv
+from pipeline import cross_validate, run_pipeline
+from reporting import plot_confusion_matrix, plot_scatter, save_cv_log, save_log
 
 K_VALUES = [3, 5, 7]
+N_FOLDS = 5
 CSV_PATH = Path("data/dataset_mahasiswa.csv")
 OUTPUT_DIR = Path("output")
 LOG_DIR = OUTPUT_DIR / "logs"
 GRAPH_DIR = OUTPUT_DIR / "graphs"
+FEATURE_COLS = [
+    "nilai_tugas",
+    "nilai_kuis",
+    "nilai_uts",
+    "nilai_uas",
+    "absensi",
+    "jam_belajar",
+]
+LABEL_COL = "label"
 
 
 def _print_detail(result: dict[str, Any]) -> None:
@@ -63,6 +75,32 @@ def main() -> None:
         )
     save_log(results, LOG_DIR / "log.txt")
     print(f"\nOutput saved to {LOG_DIR / 'log.txt'}")
+
+    print(f"\n{'=' * 62}")
+    print(f"K-FOLD CROSS VALIDATION ({N_FOLDS} FOLDS)")
+    print(f"{'=' * 62}")
+
+    records = read_csv(CSV_PATH)
+    records_enc, classes = encode_labels(records, LABEL_COL)
+    records_norm, mins, maxs = min_max_normalize(records_enc, FEATURE_COLS)
+    X_all = [[float(row[c]) for c in FEATURE_COLS] for row in records_norm]
+    y_all = [int(row[LABEL_COL]) for row in records_norm]
+
+    for dist_name, dist_func in [("Euclidean", euclidean), ("Manhattan", manhattan)]:
+        print(f"\n--- Distance: {dist_name} ---")
+        print(f"{'K':>3s}  {'Rata-rata':>10s}  {'Std Dev':>8s}  {'Per-Fold':>30s}")
+        print(f"{'-' * 55}")
+
+        cv_all = []
+        for k in K_VALUES:
+            cv = cross_validate(X_all, y_all, k, n_folds=N_FOLDS, dist_func=dist_func)
+            cv_all.append(cv)
+            acc_str = "  ".join(f"{a:6.2f}" for a in cv["accuracies"])
+            print(f"{k:3d}  {cv['mean_accuracy']:8.2f}%  {cv['std_accuracy']:6.2f}%    {acc_str}")
+
+        save_cv_log(cv_all, LOG_DIR / f"cv_{dist_name.lower()}.txt")
+
+    print(f"\nCV logs saved to {LOG_DIR / 'cv_euclidean.txt'} & {LOG_DIR / 'cv_manhattan.txt'}")
 
 
 if __name__ == "__main__":
