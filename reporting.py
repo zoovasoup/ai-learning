@@ -16,7 +16,7 @@ def save_log(results: list[dict[str, Any]], path: str | Path) -> None:
 
     lines: list[str] = []
     lines.append("=" * 62)
-    lines.append("KNN - PREDIKSI KELULUSAN MAHASISWA")
+    lines.append("KNN - SONG MOOD CLASSIFIER (SPOTIFY 2019)")
     lines.append("=" * 62)
     lines.append(f"Dataset        : dataset_mahasiswa.csv")
     lines.append(f"Total Data     : ...")
@@ -140,61 +140,57 @@ def save_cv_log(cv_results: list[dict[str, Any]], path: str | Path) -> None:
     output_path.write_text("\n".join(lines), encoding="utf-8")
 
 
-def plot_scatter(
-    train_data: list[dict[str, Any]],
-    test_data: list[dict[str, Any]],
-    y_test: list[int],
+def plot_pca(
+    X_all: list[list[float]],
+    y_all: list[int],
+    test_idx_list: list[int],
     y_pred: list[int],
     classes: dict[str, int],
     k: int,
     save_path: str | Path,
-    x_col: str = "valence",
-    y_col: str = "energy",
 ) -> None:
     output_path = Path(save_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     rev_classes = {v: k for k, v in classes.items()}
     colors = {"Energetic": "#d64933", "Happy": "#f4a261", "Chill": "#2e86ab", "Sad": "#6b4c85"}
-    feat_labels = {
-        "danceability": "Danceability",
-        "energy": "Energy",
-        "loudness": "Loudness (dB)",
-        "speechiness": "Speechiness",
-        "acousticness": "Acousticness",
-        "instrumentalness": "Instrumentalness",
-        "liveness": "Liveness",
-        "valence": "Valence",
-        "tempo": "Tempo (BPM)",
-    }
+
+    X = np.array(X_all)
+    X_centered = X - X.mean(axis=0)
+    U, S, Vt = np.linalg.svd(X_centered, full_matrices=False)
+    X_pca = X_centered @ Vt.T[:, :2]
 
     fig, ax = plt.subplots(figsize=(8, 6))
 
-    for row in train_data:
-        x = float(row[x_col])
-        y = float(row[y_col])
-        label = rev_classes.get(int(row["mood"]), "Unknown")
-        ax.scatter(x, y, c=colors.get(label, "#888"), s=40, alpha=0.35, edgecolors="none", zorder=1)
+    # background: all points colored by mood
+    for i in range(len(X_pca)):
+        label = rev_classes.get(y_all[i], "Unknown")
+        ax.scatter(X_pca[i, 0], X_pca[i, 1], c=colors.get(label, "#888"),
+                   s=12, alpha=0.2, edgecolors="none", zorder=1)
 
+    # overlay test points — idx order matches y_pred order
     correct_x, correct_y = [], []
     wrong_x, wrong_y = [], []
-    for i, row in enumerate(test_data):
-        x = float(row[x_col])
-        y = float(row[y_col])
-        if y_test[i] == y_pred[i]:
-            correct_x.append(x)
-            correct_y.append(y)
+    for pred_i, idx in enumerate(test_idx_list):
+        if y_all[idx] == y_pred[pred_i]:
+            correct_x.append(X_pca[idx, 0])
+            correct_y.append(X_pca[idx, 1])
         else:
-            wrong_x.append(x)
-            wrong_y.append(y)
+            wrong_x.append(X_pca[idx, 0])
+            wrong_y.append(X_pca[idx, 1])
 
     ax.scatter(correct_x, correct_y, c="#1b5e20", s=110, alpha=0.9,
-               edgecolors="black", linewidths=1.2, marker="o", zorder=3, label="Prediksi Benar")
+               edgecolors="black", linewidths=1.2, marker="o", zorder=3, label="Uji - Benar")
     ax.scatter(wrong_x, wrong_y, c="#b71c1c", s=150, alpha=0.9,
-               edgecolors="black", linewidths=1.5, marker="X", zorder=4, label="Prediksi Salah")
+               edgecolors="black", linewidths=1.5, marker="X", zorder=4, label="Uji - Salah")
+
+    var_ratio = (S[:2] ** 2) / (S ** 2).sum()
+    ax.set_xlabel(f"PC1 ({var_ratio[0]:.0%} varians)")
+    ax.set_ylabel(f"PC2 ({var_ratio[1]:.0%} varians)")
+    ax.set_title(f"PCA — Proyeksi 9 Fitur Audio (K = {k})")
 
     handles = [
-        plt.Line2D([], [], marker="o", linestyle="none", c=colors[m], alpha=0.35, label=f"{m} (latih)")
+        plt.Line2D([], [], marker="o", linestyle="none", c=colors[m], alpha=0.5, label=m)
         for m in rev_classes.values()
     ] + [
         plt.Line2D([], [], marker="o", linestyle="none", c="#1b5e20", markeredgecolor="black",
@@ -203,11 +199,48 @@ def plot_scatter(
                    markeredgewidth=1.5, label="Uji - Salah"),
     ]
     ax.legend(handles=handles, loc="best", fontsize=8)
-
-    ax.set_xlabel(feat_labels.get(x_col, x_col))
-    ax.set_ylabel(feat_labels.get(y_col, y_col))
-    ax.set_title(f"Sebaran Mood Lagu (K = {k})")
     ax.grid(True, linestyle="--", alpha=0.25)
+
+    fig.tight_layout()
+    plt.savefig(output_path, dpi=180, bbox_inches="tight")
+    plt.close()
+
+
+def plot_radar(
+    records_norm: list[dict[str, Any]],
+    feature_cols: list[str],
+    classes: dict[str, int],
+    save_path: str | Path,
+    label_col: str = "mood",
+) -> None:
+    output_path = Path(save_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    rev_classes = {v: k for k, v in classes.items()}
+    colors = {"Energetic": "#d64933", "Happy": "#f4a261", "Chill": "#2e86ab", "Sad": "#6b4c85"}
+
+    # mean per mood per feature (denormalize for intelligible scale)
+    mood_means: dict[str, list[float]] = {}
+    for class_id, mood in rev_classes.items():
+        group = [r for r in records_norm if int(r[label_col]) == class_id]
+        means = [float(np.mean([float(r[c]) for r in group])) for c in feature_cols]
+        mood_means[mood] = means
+
+    n_feat = len(feature_cols)
+    angles = np.linspace(0, 2 * np.pi, n_feat, endpoint=False).tolist()
+    angles += angles[:1]
+
+    fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True))
+
+    for mood, means in mood_means.items():
+        values = means + means[:1]
+        ax.plot(angles, values, color=colors[mood], linewidth=1.8, label=mood)
+        ax.fill(angles, values, color=colors[mood], alpha=0.08)
+
+    ax.set_xticks(angles[:-1])
+    ax.set_xticklabels(feature_cols, size=9)
+    ax.set_title("Profil Fitur per Mood", pad=25, fontsize=12)
+    ax.legend(loc="upper right", bbox_to_anchor=(1.35, 1.1), fontsize=9)
 
     fig.tight_layout()
     plt.savefig(output_path, dpi=180, bbox_inches="tight")

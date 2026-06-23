@@ -3,10 +3,13 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import random
+
+from knn.classifier import accuracy_score, confusion_matrix, predict
 from knn.distance import euclidean, manhattan
 from knn.preprocessing import encode_labels, min_max_normalize, read_csv
-from pipeline import cross_validate, run_pipeline
-from reporting import plot_confusion_matrix, plot_scatter, save_cv_log, save_log
+from pipeline import cross_validate
+from reporting import plot_confusion_matrix, plot_pca, plot_radar, save_cv_log, save_log
 
 K_VALUES = [3, 5, 7]
 N_FOLDS = 5
@@ -28,13 +31,7 @@ FEATURE_COLS = [
 LABEL_COL = "mood"
 
 
-def _print_detail(result: dict[str, Any]) -> None:
-    k = result["k"]
-    y_test = result["y_test"]
-    y_pred = result["y_pred"]
-    cm = result["cm"]
-    acc = result["accuracy"]
-    classes = result.get("classes", {})
+def _print_detail(k: int, y_test: list[int], y_pred: list[int], cm: list[list[int]], acc: float, classes: dict[str, int]) -> None:
     rev_classes = {v: k for k, v in classes.items()}
 
     print(f"\n{'=' * 62}")
@@ -64,40 +61,49 @@ def _print_detail(result: dict[str, Any]) -> None:
 
 
 def main() -> None:
+    records = read_csv(CSV_PATH)
+    records_enc, classes = encode_labels(records, LABEL_COL)
+    records_norm, mins, maxs = min_max_normalize(records_enc, FEATURE_COLS)
+
+    X_all = [[float(row[c]) for c in FEATURE_COLS] for row in records_norm]
+    y_all = [int(row[LABEL_COL]) for row in records_norm]
+
+    # manual split with index tracking
+    idx = list(range(len(records_norm)))
+    random.shuffle(idx)
+    test_size = max(1, int(len(idx) * 0.2))
+    test_idx_list = sorted(idx[:test_size])
+    train_idx = idx[test_size:]
+
+    X_train = [X_all[i] for i in train_idx]
+    y_train = [y_all[i] for i in train_idx]
+    X_test = [X_all[i] for i in test_idx_list]
+    y_test = [y_all[i] for i in test_idx_list]
+
     results = []
     for k in K_VALUES:
-        result = run_pipeline(CSV_PATH, k)
-        results.append(result)
-        _print_detail(result)
-        rev_classes = {v: k for k, v in result["classes"].items()}
-        class_names = [rev_classes[i] for i in range(len(result["cm"]))]
-        plot_confusion_matrix(
-            result["cm"],
-            k,
-            GRAPH_DIR / f"confusion_matrix_k{k}.png",
-            classes=class_names,
-        )
-        plot_scatter(
-            result["train_data"],
-            result["test_data"],
-            result["y_test"],
-            result["y_pred"],
-            result["classes"],
-            k,
-            GRAPH_DIR / f"scatter_k{k}.png",
-        )
+        y_pred = predict(X_test, X_train, y_train, k)
+        acc = accuracy_score(y_test, y_pred)
+        cm = confusion_matrix(y_test, y_pred)
+
+        res = {"k": k, "accuracy": acc, "cm": cm, "y_pred": y_pred, "y_test": y_test, "classes": classes}
+        results.append(res)
+        _print_detail(k, y_test, y_pred, cm, acc, classes)
+
+        rev_classes = {v: k for k, v in classes.items()}
+        class_names = [rev_classes[i] for i in range(len(cm))]
+        plot_confusion_matrix(cm, k, GRAPH_DIR / f"confusion_matrix_k{k}.png", classes=class_names)
+        plot_pca(X_all, y_all, test_idx_list, y_pred, classes, k, GRAPH_DIR / f"pca_k{k}.png")
+
     save_log(results, LOG_DIR / "log.txt")
     print(f"\nOutput saved to {LOG_DIR / 'log.txt'}")
+
+    plot_radar(records_norm, FEATURE_COLS, classes, GRAPH_DIR / "radar.png")
+    print(f"Radar chart saved to {GRAPH_DIR / 'radar.png'}")
 
     print(f"\n{'=' * 62}")
     print(f"K-FOLD CROSS VALIDATION ({N_FOLDS} FOLDS)")
     print(f"{'=' * 62}")
-
-    records = read_csv(CSV_PATH)
-    records_enc, classes = encode_labels(records, LABEL_COL)
-    records_norm, mins, maxs = min_max_normalize(records_enc, FEATURE_COLS)
-    X_all = [[float(row[c]) for c in FEATURE_COLS] for row in records_norm]
-    y_all = [int(row[LABEL_COL]) for row in records_norm]
 
     for dist_name, dist_func in [("Euclidean", euclidean), ("Manhattan", manhattan)]:
         print(f"\n--- Distance: {dist_name} ---")
