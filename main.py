@@ -10,17 +10,20 @@ from reporting import plot_confusion_matrix, plot_scatter, save_cv_log, save_log
 
 K_VALUES = [3, 5, 7]
 N_FOLDS = 5
-CSV_PATH = Path("data/song_mood.csv")
-OUTPUT_DIR = Path("output") / "song_mood"
+CSV_PATH = Path("data/tracks_mood.csv")
+OUTPUT_DIR = Path("output") / "tracks_mood"
 LOG_DIR = OUTPUT_DIR / "logs"
 GRAPH_DIR = OUTPUT_DIR / "graphs"
 FEATURE_COLS = [
-    "bpm",
-    "energy",
     "danceability",
+    "energy",
     "loudness",
-    "duration_sec",
+    "speechiness",
     "acousticness",
+    "instrumentalness",
+    "liveness",
+    "valence",
+    "tempo",
 ]
 LABEL_COL = "mood"
 

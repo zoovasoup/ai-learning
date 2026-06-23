@@ -7,16 +7,19 @@ from knn.distance import euclidean, manhattan
 from knn.preprocessing import encode_labels, min_max_normalize, read_csv
 
 FEATURE_COLS = [
-    "bpm",
-    "energy",
     "danceability",
+    "energy",
     "loudness",
-    "duration_sec",
+    "speechiness",
     "acousticness",
+    "instrumentalness",
+    "liveness",
+    "valence",
+    "tempo",
 ]
 LABEL_COL = "mood"
 K_VALUES = [3, 5, 7]
-CSV_PATH = Path("data/song_mood.csv")
+CSV_PATH = Path("data/tracks_mood.csv")
 
 DIST_CHOICES = {"1": ("Euclidean", euclidean), "2": ("Manhattan", manhattan)}
 
@@ -49,12 +52,15 @@ def _ask_float(prompt: str) -> float:
 def _ask_data() -> dict[str, float]:
     print("\n=== INPUT FITUR LAGU ===")
     return {
-        "bpm": _ask_float("BPM (50-200)         : "),
-        "energy": _ask_float("Energy (0.0-1.0)     : "),
-        "danceability": _ask_float("Danceability (0-1)   : "),
-        "loudness": _ask_float("Loudness (-30 - 0 dB): "),
-        "duration_sec": _ask_float("Duration (detik)      : "),
-        "acousticness": _ask_float("Acousticness (0-1)    : "),
+        "danceability": _ask_float("Danceability (0.0-1.0): "),
+        "energy": _ask_float("Energy (0.0-1.0)       : "),
+        "loudness": _ask_float("Loudness (-60 - 0 dB) : "),
+        "speechiness": _ask_float("Speechiness (0.0-1.0) : "),
+        "acousticness": _ask_float("Acousticness (0.0-1.0): "),
+        "instrumentalness": _ask_float("Instrumentalness (0-1): "),
+        "liveness": _ask_float("Liveness (0.0-1.0)    : "),
+        "valence": _ask_float("Valence (0.0-1.0)      : "),
+        "tempo": _ask_float("Tempo (BPM, 0-250)     : "),
     }
 
 
@@ -97,7 +103,7 @@ def main() -> None:
         print(f"{'Mood':>25s}  {results[3]:>10s}  {results[5]:>10s}  {results[7]:>10s}")
         print(f"{'=' * 55}")
 
-        lanjut = input("\nInput lagi? (y/n): ").strip().lower()
+        lanjut = input("\nInput lagu lain? (y/n): ").strip().lower()
         if lanjut != "y":
             print("Selesai.")
             break

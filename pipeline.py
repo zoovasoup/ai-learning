@@ -17,12 +17,15 @@ from knn.preprocessing import (
 DistanceFunc = Callable[[list[float], list[float]], float]
 
 FEATURE_COLS = [
-    "bpm",
-    "energy",
     "danceability",
+    "energy",
     "loudness",
-    "duration_sec",
+    "speechiness",
     "acousticness",
+    "instrumentalness",
+    "liveness",
+    "valence",
+    "tempo",
 ]
 LABEL_COL = "mood"
 

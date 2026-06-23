@@ -16,7 +16,11 @@ build/
 
 # Output artifacts (but allow .gitkeep)
 output/**
+!output/**/
 !output/**/.gitkeep
+
+# Large raw datasets (not committed)
+data/tracks.csv
 
 # Environment
 .env

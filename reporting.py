@@ -148,8 +148,8 @@ def plot_scatter(
     classes: dict[str, int],
     k: int,
     save_path: str | Path,
-    x_col: str = "energy",
-    y_col: str = "bpm",
+    x_col: str = "valence",
+    y_col: str = "energy",
 ) -> None:
     output_path = Path(save_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -157,12 +157,15 @@ def plot_scatter(
     rev_classes = {v: k for k, v in classes.items()}
     colors = {"Energetic": "#d64933", "Happy": "#f4a261", "Chill": "#2e86ab", "Sad": "#6b4c85"}
     feat_labels = {
-        "bpm": "BPM",
-        "energy": "Energy",
         "danceability": "Danceability",
+        "energy": "Energy",
         "loudness": "Loudness (dB)",
-        "duration_sec": "Duration (detik)",
+        "speechiness": "Speechiness",
         "acousticness": "Acousticness",
+        "instrumentalness": "Instrumentalness",
+        "liveness": "Liveness",
+        "valence": "Valence",
+        "tempo": "Tempo (BPM)",
     }
 
     fig, ax = plt.subplots(figsize=(8, 6))
