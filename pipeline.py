@@ -17,14 +17,14 @@ from knn.preprocessing import (
 DistanceFunc = Callable[[list[float], list[float]], float]
 
 FEATURE_COLS = [
-    "nilai_tugas",
-    "nilai_kuis",
-    "nilai_uts",
-    "nilai_uas",
-    "absensi",
-    "jam_belajar",
+    "bpm",
+    "energy",
+    "danceability",
+    "loudness",
+    "duration_sec",
+    "acousticness",
 ]
-LABEL_COL = "label"
+LABEL_COL = "mood"
 
 
 def _extract_xy(

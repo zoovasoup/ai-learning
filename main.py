@@ -10,19 +10,19 @@ from reporting import plot_confusion_matrix, plot_scatter, save_cv_log, save_log
 
 K_VALUES = [3, 5, 7]
 N_FOLDS = 5
-CSV_PATH = Path("data/dataset_mahasiswa.csv")
-OUTPUT_DIR = Path("output")
+CSV_PATH = Path("data/song_mood.csv")
+OUTPUT_DIR = Path("output") / "song_mood"
 LOG_DIR = OUTPUT_DIR / "logs"
 GRAPH_DIR = OUTPUT_DIR / "graphs"
 FEATURE_COLS = [
-    "nilai_tugas",
-    "nilai_kuis",
-    "nilai_uts",
-    "nilai_uas",
-    "absensi",
-    "jam_belajar",
+    "bpm",
+    "energy",
+    "danceability",
+    "loudness",
+    "duration_sec",
+    "acousticness",
 ]
-LABEL_COL = "label"
+LABEL_COL = "mood"
 
 
 def _print_detail(result: dict[str, Any]) -> None:
@@ -47,9 +47,16 @@ def _print_detail(result: dict[str, Any]) -> None:
     print(f"K = {k}  | Accuracy: {acc:.2f}%")
     print(f"{'=' * 62}")
     print(f"\nConfusion Matrix:")
-    print(f"{'':20s}{'Pred Lulus':>12s}{'Pred Tdk Lulus':>16s}")
-    print(f"{'Lulus':20s}{cm[0][0]:>12d}{cm[0][1]:>16d}")
-    print(f"{'Tidak Lulus':20s}{cm[1][0]:>12d}{cm[1][1]:>16d}")
+    rev_list = [rev_classes[i] for i in range(len(cm))]
+    header = f"{'':20s}"
+    for c in rev_list:
+        header += f"{c:>16s}"
+    print(header)
+    for i, row in enumerate(cm):
+        line = f"{rev_list[i]:20s}"
+        for v in row:
+            line += f"{v:>16d}"
+        print(line)
     print(f"{'=' * 62}")
 
 
@@ -59,10 +66,13 @@ def main() -> None:
         result = run_pipeline(CSV_PATH, k)
         results.append(result)
         _print_detail(result)
+        rev_classes = {v: k for k, v in result["classes"].items()}
+        class_names = [rev_classes[i] for i in range(len(result["cm"]))]
         plot_confusion_matrix(
             result["cm"],
             k,
             GRAPH_DIR / f"confusion_matrix_k{k}.png",
+            classes=class_names,
         )
         plot_scatter(
             result["train_data"],

@@ -58,15 +58,8 @@ def confusion_matrix(y_true: list[int], y_pred: list[int]) -> list[list[int]]:
     if len(y_true) != len(y_pred):
         raise ValueError("y_true and y_pred must have the same length")
 
-    tn = fp = fn = tp = 0
+    n_classes = max(max(y_true, default=0), max(y_pred, default=0)) + 1
+    cm = [[0] * n_classes for _ in range(n_classes)]
     for actual, predicted in zip(y_true, y_pred):
-        if actual == 0 and predicted == 0:
-            tn += 1
-        elif actual == 0 and predicted == 1:
-            fp += 1
-        elif actual == 1 and predicted == 0:
-            fn += 1
-        elif actual == 1 and predicted == 1:
-            tp += 1
-
-    return [[tn, fp], [fn, tp]]
+        cm[actual][predicted] += 1
+    return cm

@@ -7,16 +7,16 @@ from knn.distance import euclidean, manhattan
 from knn.preprocessing import encode_labels, min_max_normalize, read_csv
 
 FEATURE_COLS = [
-    "nilai_tugas",
-    "nilai_kuis",
-    "nilai_uts",
-    "nilai_uas",
-    "absensi",
-    "jam_belajar",
+    "bpm",
+    "energy",
+    "danceability",
+    "loudness",
+    "duration_sec",
+    "acousticness",
 ]
-LABEL_COL = "label"
+LABEL_COL = "mood"
 K_VALUES = [3, 5, 7]
-CSV_PATH = Path("data/dataset_mahasiswa.csv")
+CSV_PATH = Path("data/song_mood.csv")
 
 DIST_CHOICES = {"1": ("Euclidean", euclidean), "2": ("Manhattan", manhattan)}
 
@@ -47,14 +47,14 @@ def _ask_float(prompt: str) -> float:
 
 
 def _ask_data() -> dict[str, float]:
-    print("\n=== INPUT DATA MAHASISWA ===")
+    print("\n=== INPUT FITUR LAGU ===")
     return {
-        "nilai_tugas": _ask_float("Nilai Tugas (0-100)   : "),
-        "nilai_kuis": _ask_float("Nilai Kuis (0-100)    : "),
-        "nilai_uts": _ask_float("Nilai UTS (0-100)     : "),
-        "nilai_uas": _ask_float("Nilai UAS (0-100)     : "),
-        "absensi": _ask_float("Absensi (0-100)       : "),
-        "jam_belajar": _ask_float("Jam Belajar/Minggu (0-40): "),
+        "bpm": _ask_float("BPM (50-200)         : "),
+        "energy": _ask_float("Energy (0.0-1.0)     : "),
+        "danceability": _ask_float("Danceability (0-1)   : "),
+        "loudness": _ask_float("Loudness (-30 - 0 dB): "),
+        "duration_sec": _ask_float("Duration (detik)      : "),
+        "acousticness": _ask_float("Acousticness (0-1)    : "),
     }
 
 
@@ -85,8 +85,8 @@ def main() -> None:
         dist_name, dist_func = _ask_dist()
 
         print(f"\n{'=' * 55}")
-        print(f"{'Data':>25s}  {'K=3':>8s}  {'K=5':>8s}  {'K=7':>8s}")
-        print(f"{'Jarak':>25s}  {dist_name:>8s}")
+        print(f"{'Data':>25s}  {'K=3':>10s}  {'K=5':>10s}  {'K=7':>10s}")
+        print(f"{'Jarak':>25s}  {dist_name:>10s}")
         print(f"{'-' * 55}")
 
         results = {}
@@ -94,7 +94,7 @@ def main() -> None:
             pred = predict_one(norm, train_X, train_y, k, dist_func)
             results[k] = rev_classes.get(pred, str(pred))
 
-        print(f"{'Hasil':>25s}  {results[3]:>8s}  {results[5]:>8s}  {results[7]:>8s}")
+        print(f"{'Mood':>25s}  {results[3]:>10s}  {results[5]:>10s}  {results[7]:>10s}")
         print(f"{'=' * 55}")
 
         lanjut = input("\nInput lagi? (y/n): ").strip().lower()
