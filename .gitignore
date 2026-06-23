@@ -1,0 +1,23 @@
+# Agent / AI instruction files (not part of project source)
+.agent/
+.AGENT/
+AGENT.md
+AGENTS.md
+CLAUDE.md
+RULE.md
+*.agent.md
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Output artifacts
+output/
+
+# Environment
+.env
+.venv
+venv/
