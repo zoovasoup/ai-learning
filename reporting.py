@@ -18,7 +18,7 @@ def save_log(results: list[dict[str, Any]], path: str | Path) -> None:
     lines.append("=" * 62)
     lines.append("KNN - SONG MOOD CLASSIFIER (SPOTIFY 2019)")
     lines.append("=" * 62)
-    lines.append(f"Dataset        : dataset_mahasiswa.csv")
+    lines.append(f"Dataset        : tracks_mood.csv")
     lines.append(f"Total Data     : ...")
     lines.append("=" * 62)
     lines.append("")
