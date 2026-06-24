@@ -5,8 +5,7 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any, Callable
 
-from knn.classifier import accuracy_score, confusion_matrix, predict
-from knn.distance import euclidean
+from knn.compute import accuracy_score, confusion_matrix, euclidean, predict
 from knn.preprocessing import (
     encode_labels,
     min_max_normalize,

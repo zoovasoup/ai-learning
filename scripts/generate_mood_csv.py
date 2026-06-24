@@ -1,4 +1,31 @@
-"""Filter tracks.csv → year + derive mood from valence × energy (Russell's Circumplex)."""
+"""=============================================================
+FILTER + LABEL DATASET SPOTIFY
+=============================================================
+Langkah-langkah pembuatan tracks_mood.csv:
+  1. Baca tracks.csv (586.672 lagu, 1922-2021)
+  2. Filter: ambil hanya tahun 2019
+  3. Hitung median valence & energy dari data 2019
+  4. Tentukan mood tiap lagu pakai Russell's Circumplex:
+       ┌────────────┬───────────┬──────────┐
+       │ Mood       │ Valence   │ Energy   │
+       ├────────────┼───────────┼──────────┤
+       │ Happy      │ ≥ median  │ ≥ median │
+       │ Chill      │ ≥ median  │ < median │
+       │ Energetic  │ < median  │ ≥ median │
+       │ Sad        │ < median  │ < median │
+       └────────────┴───────────┴──────────┘
+  5. Shuffle + ambil 1.500 baris pertama
+  6. Simpan ke tracks_mood.csv
+
+Contoh (Russell's Circumplex Model):
+  valence=0.75, energy=0.82
+    → valence ≥ median (0.50) ✓, energy ≥ median (0.64) ✓
+    → Mood: HAPPY
+
+  valence=0.30, energy=0.55
+    → valence < median (0.50) ✓, energy < median (0.64) ✓
+    → Mood: SAD
+============================================================="""
 
 import argparse
 import csv

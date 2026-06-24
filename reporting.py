@@ -212,6 +212,8 @@ def plot_radar(
     classes: dict[str, int],
     save_path: str | Path,
     label_col: str = "mood",
+    input_vector: list[float] | None = None,
+    input_label: str = "Input",
 ) -> None:
     output_path = Path(save_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -237,10 +239,69 @@ def plot_radar(
         ax.plot(angles, values, color=colors[mood], linewidth=1.8, label=mood)
         ax.fill(angles, values, color=colors[mood], alpha=0.08)
 
+    if input_vector is not None:
+        values = input_vector + input_vector[:1]
+        ax.plot(angles, values, color="black", linewidth=2.5, linestyle="--", label=input_label)
+
     ax.set_xticks(angles[:-1])
     ax.set_xticklabels(feature_cols, size=9)
     ax.set_title("Profil Fitur per Mood", pad=25, fontsize=12)
     ax.legend(loc="upper right", bbox_to_anchor=(1.35, 1.1), fontsize=9)
+
+    fig.tight_layout()
+    plt.savefig(output_path, dpi=180, bbox_inches="tight")
+    plt.close()
+
+
+def plot_predict_scatter(
+    X_all: list[list[float]],
+    y_all: list[int],
+    classes: dict[str, int],
+    input_vector: list[float],
+    save_path: str | Path,
+) -> None:
+    output_path = Path(save_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    rev_classes = {v: k for k, v in classes.items()}
+    colors = {"Energetic": "#d64933", "Happy": "#f4a261", "Chill": "#2e86ab", "Sad": "#6b4c85"}
+
+    X = np.array(X_all)
+    X_centered = X - X.mean(axis=0)
+    U, S, Vt = np.linalg.svd(X_centered, full_matrices=False)
+    X_pca = X_centered @ Vt.T[:, :2]
+
+    # project input vector using same PCA
+    inp = np.array([input_vector])
+    inp_centered = inp - X.mean(axis=0)
+    inp_pca = inp_centered @ Vt.T[:, :2]
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    # all training points
+    for i in range(len(X_pca)):
+        label = rev_classes.get(y_all[i], "Unknown")
+        ax.scatter(X_pca[i, 0], X_pca[i, 1], c=colors.get(label, "#888"),
+                   s=12, alpha=0.2, edgecolors="none", zorder=1)
+
+    # input point
+    ax.scatter(inp_pca[0, 0], inp_pca[0, 1], c="#e63946", s=200, alpha=0.95,
+               edgecolors="black", linewidths=2, marker="*", zorder=5, label="Input")
+
+    var_ratio = (S[:2] ** 2) / (S ** 2).sum()
+    ax.set_xlabel(f"PC1 ({var_ratio[0]:.0%} varians)")
+    ax.set_ylabel(f"PC2 ({var_ratio[1]:.0%} varians)")
+    ax.set_title("PCA — Posisi Input di Ruang 9 Fitur Audio")
+
+    handles = [
+        plt.Line2D([], [], marker="o", linestyle="none", c=colors[m], alpha=0.5, label=m)
+        for m in rev_classes.values()
+    ] + [
+        plt.Line2D([], [], marker="*", linestyle="none", c="#e63946", markersize=10,
+                   markeredgecolor="black", markeredgewidth=1.5, label="Input"),
+    ]
+    ax.legend(handles=handles, loc="best", fontsize=8)
+    ax.grid(True, linestyle="--", alpha=0.25)
 
     fig.tight_layout()
     plt.savefig(output_path, dpi=180, bbox_inches="tight")
